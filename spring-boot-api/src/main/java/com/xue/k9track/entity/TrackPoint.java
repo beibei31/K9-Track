@@ -6,12 +6,16 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("track_points")
+@TableName("track_point")
 public class TrackPoint {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Integer pointId;
-    private Double lng;
-    private Double lat;
     private String timestamp;
+    private Double longitude;
+    private Double latitude;
+    private Double altitude;
+    private Double speedKmh;
+    private String phase;
+    private String pointType;
 }

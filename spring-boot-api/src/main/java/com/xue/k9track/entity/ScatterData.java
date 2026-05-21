@@ -10,6 +10,6 @@ import lombok.Data;
 public class ScatterData {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private Double speed;
+    private Double speedKmh;
     private Double altitude;
 }

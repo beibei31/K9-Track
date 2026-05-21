@@ -10,6 +10,6 @@ import lombok.Data;
 public class HourlyActivity {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private Integer hour;
-    private Integer count;
+    private Integer hourOfDay;
+    private Integer activityCount;
 }

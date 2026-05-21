@@ -6,12 +6,12 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("stopovers")
+@TableName("stopover")
 public class Stopover {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private Double lat;
-    private Double lng;
+    private Double longitude;
+    private Double latitude;
     private String startTime;
     private String endTime;
     private Double stayDays;

@@ -6,13 +6,13 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("phase_stat")
-public class PhaseStat {
+@TableName("migration_summary")
+public class MigrationSummary {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private String phase;
-    private Integer pointCount;
+    private Double totalDistance;
     private Double avgSpeed;
     private Double maxSpeed;
-    private Double avgAltitude;
+    private Double totalStopoverDays;
+    private String updateTime;
 }
