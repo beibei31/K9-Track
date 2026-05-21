@@ -6,28 +6,34 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
+
+const props = defineProps({
+  scatterData: { type: Array, default: () => [] }
+})
 
 const chartRef = ref(null)
 let chart = null
 let ro = null
 
-function mock() {
-  const pts = []
-  for (let i = 0; i < 500; i++) {
-    const speed = Math.round((20 + Math.random() * 45) * 10) / 10
-    const altitude = Math.round(speed * 28 + (Math.random() - 0.5) * 1200)
-    pts.push([speed, Math.max(50, Math.min(2900, altitude))])
-  }
-  return pts
-}
-
 function render() {
   const el = chartRef.value
   if (!el || el.clientWidth === 0) return
   if (!chart) chart = echarts.init(el)
-  chart.setOption({
+
+  let pts
+  if (props.scatterData.length > 0) {
+    pts = props.scatterData.map(d => [d.speedKmh, d.altitude])
+  } else {
+    pts = []
+    for (let i = 0; i < 500; i++) {
+      const s = 20 + Math.random() * 45
+      pts.push([Math.round(s * 10) / 10, Math.max(50, Math.min(2900, s * 28 + (Math.random() - 0.5) * 1200))])
+    }
+  }
+
+  const option = {
     tooltip: {
       trigger: 'item',
       backgroundColor: '#fff',
@@ -50,15 +56,16 @@ function render() {
     },
     series: [{
       type: 'scatter',
-      data: mock(),
+      data: pts,
       symbolSize: 6,
-      itemStyle: {
-        color: 'rgba(24,144,255,0.55)',
-        borderWidth: 0
-      }
+      itemStyle: { color: 'rgba(24,144,255,0.55)', borderWidth: 0 }
     }]
-  })
+  }
+  chart.clear()
+  chart.setOption(option)
 }
+
+watch(() => props.scatterData, () => render(), { deep: true })
 
 onMounted(() => {
   const el = chartRef.value

@@ -1,28 +1,24 @@
 <template>
   <div class="cht-wrap">
-    <div class="cht-title">昼夜飞行习性</div>
+    <div class="cht-title">昼夜飞行节律</div>
     <div ref="chartRef" class="cht-body"></div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
+
+const props = defineProps({
+  hourlyData: { type: Array, default: () => [] }
+})
 
 const chartRef = ref(null)
 let chart = null
 let ro = null
 
-function mock() {
-  return [
-    312, 450, 680, 890, 1050, 1200, 980, 720,
-    520, 380, 310, 280, 260, 250, 240, 260,
-    320, 480, 720, 980, 1180, 1100, 820, 520
-  ]
-}
-
 // 莫兰迪色系 —— 低饱和度
-const MORANDI = [
+const COLORS = [
   '#9bbfd4','#a3c9c7','#c2cfa3','#dfcf9f',
   '#e2bd9c','#dba898','#cba3a3','#c2a6bf',
   '#b3b3cc','#a3bdd4','#a3c9c0','#bccfa3',
@@ -35,14 +31,21 @@ function render() {
   const el = chartRef.value
   if (!el || el.clientWidth === 0) return
   if (!chart) chart = echarts.init(el)
-  const data = mock()
-  chart.setOption({
+
+  let data
+  if (props.hourlyData.length === 24) {
+    data = props.hourlyData.map(h => ({ name: String(h.hourOfDay), value: h.activityCount || 0 }))
+  } else {
+    data = Array.from({length: 24}, (_, i) => ({ name: String(i), value: 30 + Math.random() * 50 }))
+  }
+
+  const option = {
     tooltip: {
       trigger: 'item',
       backgroundColor: '#fff',
       borderColor: '#e8e8e8',
       textStyle: { color: '#1a1a1a', fontSize: 12 },
-      formatter: p => `<b>${p.name}:00</b><br/>飞行频次 ${p.value}`
+      formatter: p => `<b>${p.name}:00</b><br/>飞行占比 ${p.value}%`
     },
     series: [{
       type: 'pie',
@@ -50,16 +53,19 @@ function render() {
       center: ['50%', '50%'],
       roseType: 'radius',
       itemStyle: { borderRadius: 2, borderColor: '#fff', borderWidth: 1 },
-      data: data.map((v, i) => ({
-        name: String(i),
-        value: v,
-        itemStyle: { color: MORANDI[i % MORANDI.length] }
+      data: data.map((d, i) => ({
+        ...d,
+        itemStyle: { color: COLORS[i % COLORS.length] }
       })),
-      label: { color: '#8c8c8c', fontSize: 9, formatter: p => p.value > 700 ? `${p.name}h` : '' },
+      label: { color: '#8c8c8c', fontSize: 9, formatter: p => p.value > 40 ? `${p.name}h` : '' },
       emphasis: { label: { fontSize: 14, fontWeight: 'bold' }, scaleSize: 6 }
     }]
-  })
+  }
+  chart.clear()
+  chart.setOption(option)
 }
+
+watch(() => props.hourlyData, () => render(), { deep: true })
 
 onMounted(() => {
   const el = chartRef.value

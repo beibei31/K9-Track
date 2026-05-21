@@ -28,3 +28,7 @@ export function getHourlyActivity() {
 export function getScatterData() {
   return api.get('/api/migration/scatter')
 }
+
+export function getDailySpeed() {
+  return api.get('/api/migration/daily-speed')
+}

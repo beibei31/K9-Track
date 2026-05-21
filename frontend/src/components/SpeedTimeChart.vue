@@ -6,33 +6,35 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
+
+const props = defineProps({
+  dailyData: { type: Array, default: () => [] }
+})
 
 const chartRef = ref(null)
 let chart = null
 let ro = null
 
-function mock() {
-  const days = []
-  const speeds = []
-  const start = new Date(2024, 3, 1)
-  for (let i = 0; i < 118; i++) {
-    const d = new Date(start)
-    d.setDate(d.getDate() + i)
-    days.push(`${d.getMonth() + 1}/${d.getDate()}`)
-    let base = i < 20 ? 5 + Math.random() * 20 : i < 60 ? 35 + Math.random() * 30 : 15 + Math.random() * 25
-    speeds.push(Math.round(base * 10) / 10)
-  }
-  return { days, speeds }
-}
-
 function render() {
   const el = chartRef.value
   if (!el || el.clientWidth === 0) return
   if (!chart) chart = echarts.init(el)
-  const { days, speeds } = mock()
-  chart.setOption({
+
+  const data = props.dailyData.length > 0 ? props.dailyData : (() => {
+    const a = []; const s = new Date(2024, 3, 1)
+    for (let i = 0; i < 80; i++) {
+      const d = new Date(s); d.setDate(d.getDate() + i)
+      a.push({ date: `${d.getMonth()+1}/${d.getDate()}`, avgSpeed: 30 + Math.random() * 20 })
+    }
+    return a
+  })()
+
+  const days = data.map(d => d.date)
+  const speeds = data.map(d => d.avgSpeed)
+
+  const option = {
     tooltip: {
       trigger: 'axis',
       backgroundColor: '#fff',
@@ -44,7 +46,7 @@ function render() {
     xAxis: {
       type: 'category', data: days,
       axisLine: { show: false }, axisTick: { show: false },
-      axisLabel: { color: '#8c8c8c', fontSize: 10, interval: 14 },
+      axisLabel: { color: '#8c8c8c', fontSize: 10, interval: Math.max(1, Math.floor(days.length / 6)) },
       splitLine: { show: false }
     },
     yAxis: {
@@ -63,8 +65,12 @@ function render() {
         ])
       }
     }]
-  })
+  }
+  chart.clear()
+  chart.setOption(option)
 }
+
+watch(() => props.dailyData, () => render(), { deep: true })
 
 onMounted(() => {
   const el = chartRef.value

@@ -71,4 +71,13 @@ public class MigrationController {
     public List<ScatterData> getScatter() {
         return migrationService.getScatterData();
     }
+
+    /**
+     * GET /api/migration/daily-speed
+     * 返回每日平均速度 [{date, avgSpeed}, ...]
+     */
+    @GetMapping("/daily-speed")
+    public List<Map<String, Object>> getDailySpeed() {
+        return migrationService.getDailySpeed();
+    }
 }

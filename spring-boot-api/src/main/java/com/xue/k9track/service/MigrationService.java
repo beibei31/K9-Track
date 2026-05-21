@@ -107,8 +107,21 @@ public class MigrationService {
      * 每小时活动频次
      */
     public List<HourlyActivity> getHourlyActivity() {
-        return hourlyActivityMapper.selectList(
+        List<HourlyActivity> dbList = hourlyActivityMapper.selectList(
                 new QueryWrapper<HourlyActivity>().orderByAsc("hour_of_day"));
+        // 补全缺失的小时（夜间无飞行记录时 DB 只有 18 行，前端需要 24 行）
+        java.util.Map<Integer, Integer> map = new java.util.HashMap<>();
+        for (HourlyActivity h : dbList) {
+            map.put(h.getHourOfDay(), h.getActivityCount());
+        }
+        List<HourlyActivity> result = new java.util.ArrayList<>();
+        for (int h = 0; h < 24; h++) {
+            HourlyActivity item = new HourlyActivity();
+            item.setHourOfDay(h);
+            item.setActivityCount(map.getOrDefault(h, 0));
+            result.add(item);
+        }
+        return result;
     }
 
     /**
@@ -116,5 +129,30 @@ public class MigrationService {
      */
     public List<ScatterData> getScatterData() {
         return scatterDataMapper.selectList(null);
+    }
+
+    /**
+     * 每日平均速度
+     */
+    public List<Map<String, Object>> getDailySpeed() {
+        List<TrackPoint> points = trackPointMapper.selectList(
+                new QueryWrapper<TrackPoint>().orderByAsc("point_id"));
+
+        // 按日期分组求平均速度
+        Map<String, List<Double>> dateMap = new LinkedHashMap<>();
+        for (TrackPoint p : points) {
+            String date = p.getTimestamp().substring(0, 10);
+            dateMap.computeIfAbsent(date, k -> new ArrayList<>()).add(p.getSpeedKmh());
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map.Entry<String, List<Double>> e : dateMap.entrySet()) {
+            double avg = e.getValue().stream().mapToDouble(Double::doubleValue).average().orElse(0);
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("date", e.getKey());
+            m.put("avgSpeed", Math.round(avg * 10.0) / 10.0);
+            result.add(m);
+        }
+        return result;
     }
 }

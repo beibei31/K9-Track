@@ -71,14 +71,13 @@ public class SparkAnalyzer {
                 }, DataTypes.DoubleType);
 
         // 2. 读取 CSV
-        String csvPath = SparkAnalyzer.class.getClassLoader()
-                .getResource("data/spoonbill_k9_gps.csv").getPath();
+        String csvPath = "E:/project/idea/K9-Track/input/spoonbill_k9_real_route.csv";
 
         StructType schema = new StructType()
                 .add("point_id", DataTypes.IntegerType)
                 .add("timestamp", DataTypes.StringType)
-                .add("latitude", DataTypes.DoubleType)
                 .add("longitude", DataTypes.DoubleType)
+                .add("latitude", DataTypes.DoubleType)
                 .add("altitude", DataTypes.DoubleType)
                 .add("speed_kmh", DataTypes.DoubleType)
                 .add("phase", DataTypes.StringType)
@@ -120,8 +119,8 @@ public class SparkAnalyzer {
         // ========== 处理2: 网格聚合停歇点 → stopover ==========
         System.out.println("\n[处理2] 网格聚合停歇点 → stopover");
         Dataset<Row> stopoverDF = df.filter(col("point_type").equalTo("stopover"))
-                .withColumn("grid_lat", round(col("latitude"), 2))
-                .withColumn("grid_lng", round(col("longitude"), 2));
+                .withColumn("grid_lat", round(col("latitude"), 1))
+                .withColumn("grid_lng", round(col("longitude"), 1));
 
         Dataset<Row> gridAgg = stopoverDF.groupBy("grid_lat", "grid_lng")
                 .agg(
@@ -131,7 +130,7 @@ public class SparkAnalyzer {
                 )
                 .withColumn("diff_hours",
                         col("end_time").cast("long").minus(col("start_time").cast("long")).divide(3600))
-                .filter(col("diff_hours").gt(48))  // 停留超过48小时视为有效停歇
+                .filter(col("diff_hours").gt(24))  // 停留超过24小时视为有效停歇
                 .withColumn("stay_days", round(col("diff_hours").divide(24), 1))
                 .withColumn("id", monotonically_increasing_id().plus(1))
                 .select(
@@ -172,15 +171,32 @@ public class SparkAnalyzer {
         phaseStats.show(false);
         writeToMySQL(phaseStats, "phase_stat");
 
-        // ========== 处理4: 昼夜飞行习性 → hourly_activity ==========
-        System.out.println("\n[处理4] 昼夜飞行习性 → hourly_activity");
-        Dataset<Row> hourlyDF = df
+        // ========== 处理4: 昼夜飞行习性（百分比） → hourly_activity ==========
+        System.out.println("\n[处理4] 昼夜飞行习性(飞行占比%) → hourly_activity");
+
+        // 每小时总记录数
+        Dataset<Row> hourlyTotal = df
+                .withColumn("hour_of_day", hour(col("ts")))
+                .groupBy("hour_of_day")
+                .agg(count("point_id").as("total_count"));
+
+        // 每小时飞行记录数 (speed > 20)
+        Dataset<Row> hourlyFlight = df
                 .filter(col("speed_kmh").gt(20))
                 .withColumn("hour_of_day", hour(col("ts")))
                 .groupBy("hour_of_day")
-                .agg(count("point_id").as("activity_count"))
+                .agg(count("point_id").as("flight_count"));
+
+        Dataset<Row> hourlyDF = hourlyTotal
+                .join(hourlyFlight,
+                        hourlyTotal.col("hour_of_day").equalTo(hourlyFlight.col("hour_of_day")),
+                        "left_outer")
+                .drop(hourlyFlight.col("hour_of_day"))
+                .na().fill(0)
+                .withColumn("flight_pct",
+                        round(col("flight_count").multiply(100).divide(col("total_count")), 0))
                 .withColumn("id", monotonically_increasing_id().plus(1))
-                .select(col("id"), col("hour_of_day"), col("activity_count"))
+                .select(col("id"), col("hour_of_day"), col("flight_pct").as("activity_count"))
                 .orderBy("hour_of_day");
 
         hourlyDF.show(24, false);
@@ -189,7 +205,7 @@ public class SparkAnalyzer {
         // ========== 处理5: 高度-速度散点采样 → scatter_data ==========
         System.out.println("\n[处理5] 高度-速度散点采样 → scatter_data");
         Dataset<Row> scatterDF = df
-                .filter(col("point_type").equalTo("migration"))
+                .filter(col("point_type").equalTo("flight"))
                 .select(col("speed_kmh"), col("altitude"))
                 .orderBy(rand())
                 .limit(2000)
@@ -220,10 +236,7 @@ public class SparkAnalyzer {
         double maxSpeed = speedRow.isNullAt(1) ? 0.0 : speedRow.getDouble(1);
 
         // 总停歇天数：统计不重复的停歇日期数（避免网格重叠导致重复计数）
-        long totalStopoverDays = df.filter(col("point_type").equalTo("stopover"))
-                .select(date_format(col("ts"), "yyyy-MM-dd"))
-                .distinct()
-                .count();
+        long totalStopoverDays = getCount(df);
 
         Dataset<Row> summaryDF = spark.createDataFrame(
                 java.util.Arrays.asList(
@@ -262,6 +275,13 @@ public class SparkAnalyzer {
         System.out.println("  有效停歇点: " + stopoverCount);
         System.out.println("  散点采样数: " + scatterCount);
         System.out.println("===========================================");
+    }
+
+    private static long getCount(Dataset<Row> df) {
+        return df.filter(col("point_type").equalTo("stopover"))
+                .select(date_format(col("ts"), "yyyy-MM-dd"))
+                .distinct()
+                .count();
     }
 
     /** 将 DataFrame 通过 JDBC 写入 MySQL */
@@ -342,8 +362,8 @@ public class SparkAnalyzer {
                     "CREATE TABLE IF NOT EXISTS hourly_activity ("
                     + "id INT AUTO_INCREMENT PRIMARY KEY, "
                     + "hour_of_day INT COMMENT '小时(0-23)', "
-                    + "activity_count INT COMMENT '处于飞行状态的记录数'"
-                    + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='昼夜活动频次表'");
+                    + "activity_count DOUBLE COMMENT '飞行占比(%)'"
+                    + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='昼夜活动频次表(百分比)'");
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS scatter_data ("
