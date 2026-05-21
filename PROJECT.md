@@ -34,7 +34,7 @@ K9-Track 是一个基于 **Apache Spark** 的勺嘴鹬 (Spoon-billed Sandpiper) 
 │            ECharts Geo 世界地图 + 3 个图表组件             │
 │                  http://localhost:3000                    │
 └────────────────────────┬────────────────────────────────┘
-                         │ Axios HTTP (7 个 REST API)
+                         │ Axios HTTP (6 个 REST API)
 ┌────────────────────────▼────────────────────────────────┐
 │              spring-boot-api (Spring Boot 2.7)            │
 │              MyBatis-Plus 读取 MySQL 结果表               │
@@ -44,14 +44,14 @@ K9-Track 是一个基于 **Apache Spark** 的勺嘴鹬 (Spoon-billed Sandpiper) 
                          │ JDBC
 ┌────────────────────────▼────────────────────────────────┐
 │                    MySQL 8.0 (Docker)                     │
-│              数据库: k9track (6 张结果表)                  │
+│              数据库: k9track (5 张结果表)                  │
 │                  127.0.0.1:3307                           │
 └────────────────────────┬────────────────────────────────┘
                          │ JDBC 写入
 ┌────────────────────────▼────────────────────────────────┐
 │              spark-processor (Spark 3.3.2)                │
 │             local[*] 模式，纯 Java API 编程               │
-│          CSV 原始数据 → 6 个批处理算子 → MySQL            │
+│          CSV 原始数据 → 5 个批处理算子 → MySQL            │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -72,7 +72,7 @@ K9-Track/
 ├── spark-processor/                    # Spark 批处理工程 (独立 Maven 项目)
 │   ├── pom.xml                         # Spark 3.3.2 + MySQL Connector, JDK 8
 │   └── src/main/java/com/xue/spark/
-│       └── SparkAnalyzer.java          # 主程序 (6 个批处理算子)
+│       └── SparkAnalyzer.java          # 主程序 (5 个批处理算子)
 │
 ├── spring-boot-api/                    # Web API 工程 (独立 Maven 项目)
 │   ├── pom.xml                         # Spring Boot 2.7.18 + MyBatis-Plus, JDK 17
@@ -80,17 +80,16 @@ K9-Track/
 │       ├── java/com/xue/k9track/
 │       │   ├── K9TrackApplication.java       # Spring Boot 启动类
 │       │   ├── controller/
-│       │   │   └── MigrationController.java  # REST API 控制器 (7 个接口)
+│       │   │   └── MigrationController.java  # REST API 控制器 (6 个接口)
 │       │   ├── service/
 │       │   │   └── MigrationService.java     # 业务逻辑层
-│       │   ├── entity/                       # 6 个实体类
+│       │   ├── entity/                       # 5 个实体类
 │       │   │   ├── MigrationSummary.java     # 迁徙总览
-│       │   │   ├── PhaseStat.java            # 阶段统计
 │       │   │   ├── TrackPoint.java           # 轨迹点
 │       │   │   ├── Stopover.java             # 停歇点
 │       │   │   ├── HourlyActivity.java       # 小时活动
 │       │   │   └── ScatterData.java          # 散点数据
-│       │   ├── mapper/                       # 6 个 MyBatis-Plus Mapper 接口
+│       │   ├── mapper/                       # 5 个 MyBatis-Plus Mapper 接口
 │       │   ├── util/HaversineUtil.java       # Haversine 距离计算工具
 │       │   └── mock/MockDataGenerator.java   # 模拟数据生成器
 │       └── resources/application.yml         # 数据库连接配置
@@ -101,13 +100,13 @@ K9-Track/
 │   └── src/
 │       ├── main.js                     # Vue 应用入口
 │       ├── App.vue                     # 主布局 (白底极简大屏风格, 含 ECharts Geo 地图)
-│       ├── api/index.js                # Axios 封装 (7 个 API 函数)
+│       ├── api/index.js                # Axios 封装 (6 个 API 函数)
 │       └── components/
 │           ├── SpeedTimeChart.vue      # 迁徙速度时序折线图
 │           ├── HourlyRoseChart.vue     # 昼夜飞行南丁格尔玫瑰图
 │           └── ScatterChart.vue        # 高度-速度散点图
 │
-├── sql/init.sql                        # 数据库完整 DDL (6 张表 + 建库)
+├── sql/init.sql                        # 数据库完整 DDL (5 张表 + 建库)
 ├── docker-compose.yml                  # Docker MySQL 8.0 一键启动
 ├── input/                              # 原始 GPS CSV 数据
 │   └── spoonbill_k9_gps_corrected.csv  # 194,500 条记录
@@ -125,7 +124,7 @@ K9-Track/
 MockDataGenerator.java
   → JDBC 直连 MySQL
   → 模拟 80 天迁徙数据 (182,000 GPS 点)
-  → 写入 6 张表 (含停歇点聚类、昼夜节律等)
+  → 写入 5 张表 (含停歇点聚类、昼夜节律等)
   → Spring Boot API 读取
   → 前端可视化
 ```
@@ -139,10 +138,9 @@ CSV 原始数据 (194,500 行)
   → Spark DataFrame 加载
   → 算子 1: 轨迹抽稀 (filter mod 50) → track_point 表
   → 算子 2: 网格聚合停歇点 (groupBy + 时间过滤) → stopover 表
-  → 算子 3: 阶段聚合统计 (groupBy point_type) → phase_stat 表
-  → 算子 4: 昼夜飞行占比 (flight/total × 100) → hourly_activity 表
-  → 算子 5: 随机散点采样 (orderBy rand limit) → scatter_data 表
-  → 算子 6: Haversine 总里程 + 总览 → migration_summary 表
+  → 算子 3: 昼夜飞行占比 (flight/total × 100) → hourly_activity 表
+  → 算子 4: 随机散点采样 (orderBy rand limit) → scatter_data 表
+  → 算子 5: Haversine 总里程 + 总览 → migration_summary 表
   → Spring Boot API 读取
   → 前端可视化
 ```
@@ -153,7 +151,7 @@ CSV 原始数据 (194,500 行)
 
 ## 五、数据库设计
 
-数据库：`k9track`，字符集：`utf8mb4`，共 6 张表。
+数据库：`k9track`，字符集：`utf8mb4`，共 5 张表。
 
 ### 5.1 migration_summary（迁徙总览表）
 
@@ -168,20 +166,7 @@ CSV 原始数据 (194,500 行)
 
 数据量：1 行。
 
-### 5.2 phase_stat（阶段统计表）
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INT (PK) | 自增主键 |
-| phase | VARCHAR(50) | 阶段名称 |
-| point_count | INT | 该阶段 GPS 记录数 |
-| avg_speed | DOUBLE | 平均时速 |
-| max_speed | DOUBLE | 最高时速 |
-| avg_altitude | DOUBLE | 平均海拔 |
-
-数据量：3 行（breeding / migration / stopover）。
-
-### 5.3 track_point（轨迹点表）
+### 5.2 track_point（轨迹点表）
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -197,7 +182,7 @@ CSV 原始数据 (194,500 行)
 
 数据量：~3,890 行（point_id % 50 == 0 抽稀）。
 
-### 5.4 stopover（停歇点表）
+### 5.3 stopover（停歇点表）
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -210,7 +195,7 @@ CSV 原始数据 (194,500 行)
 
 数据量：2~15 行（取决于数据源）。
 
-### 5.5 hourly_activity（昼夜活动频次表）
+### 5.4 hourly_activity（昼夜活动频次表）
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -220,7 +205,7 @@ CSV 原始数据 (194,500 行)
 
 数据量：24 行。Spark 计算逻辑：`flight_pct = flight_count / total_count × 100`，只统计 speed > 20 km/h 的飞行记录。
 
-### 5.6 scatter_data（散点采样表）
+### 5.5 scatter_data（散点采样表）
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -339,25 +324,7 @@ GET /api/migration/stopovers
 
 ---
 
-### 6.4 阶段统计
-
-```
-GET /api/migration/phase-stats
-```
-
-**响应示例：**
-
-```json
-[
-  { "phase": "breeding", "pointCount": 74400, "avgSpeed": 15.2, "maxSpeed": 45.8, "avgAltitude": 350.5 },
-  { "phase": "migration", "pointCount": 72600, "avgSpeed": 42.3, "maxSpeed": 72.6, "avgAltitude": 1200.8 },
-  { "phase": "stopover", "pointCount": 35000, "avgSpeed": 3.1, "maxSpeed": 18.2, "avgAltitude": 180.3 }
-]
-```
-
----
-
-### 6.5 昼夜活动频次
+### 6.4 昼夜活动频次
 
 ```
 GET /api/migration/hourly-activity
@@ -379,7 +346,7 @@ GET /api/migration/hourly-activity
 
 ---
 
-### 6.6 速度-高度散点
+### 6.5 速度-高度散点
 
 ```
 GET /api/migration/scatter
@@ -398,7 +365,7 @@ GET /api/migration/scatter
 
 ---
 
-### 6.7 每日平均速度
+### 6.6 每日平均速度
 
 ```
 GET /api/migration/daily-speed
@@ -485,16 +452,15 @@ SparkSession spark = SparkSession.builder()
     .getOrCreate();
 ```
 
-### 8.2 六个批处理算子
+### 8.2 五个批处理算子
 
 | # | 算子 | Spark API | 输出表 | 关键技术 |
 |---|------|-----------|--------|---------|
 | 1 | 轨迹抽稀 | `filter(mod(point_id, 50) = 0)` | track_point | 均匀间隔采样，保留时间分布特征 |
 | 2 | 停歇点识别 | `round(lat,2).groupBy` + 时间差 >48h | stopover | 空间网格分箱 + Haversine 距离过滤 |
-| 3 | 阶段统计 | `groupBy(point_type).agg(avg, max, count)` | phase_stat | 标准聚合 |
-| 4 | 昼夜飞行 | `hour(ts).groupBy` + flight/total × 100 | hourly_activity | 双 groupBy 后 join 计算百分比 |
-| 5 | 散点采样 | `filter(migration).orderBy(rand()).limit(2000)` | scatter_data | 随机采样 |
-| 6 | 总览计算 | Window `lag()` + Haversine UDF + `sum()` | migration_summary | 注册 UDF，在抽稀数据上逐行算邻点距离 |
+| 3 | 昼夜飞行 | `hour(ts).groupBy` + flight/total × 100 | hourly_activity | 双 groupBy 后 join 计算百分比 |
+| 4 | 散点采样 | `filter(migration).orderBy(rand()).limit(2000)` | scatter_data | 随机采样 |
+| 5 | 总览计算 | Window `lag()` + Haversine UDF + `sum()` | migration_summary | 注册 UDF，在抽稀数据上逐行算邻点距离 |
 
 ### 8.3 Haversine UDF
 
@@ -617,12 +583,12 @@ String csvPath = "D:/workspace/K9-Track/input/spoonbill_k9_real_route.csv";
 | Node.js | 18+ | `node -v` |
 | Docker Desktop | 最新版 | `docker -v` |
 
-### 10.2 启动步骤
+### 11.2 启动步骤
 
 **1. 启动 MySQL**
 
 ```powershell
-cd E:\project\idea\K9-Track
+cd &lt;你的项目路径&gt;
 docker compose up -d
 ```
 
@@ -659,7 +625,7 @@ npm run dev
 
 打开 http://localhost:3000
 
-### 10.3 验证清单
+### 11.3 验证清单
 
 - [ ] 5 个统计卡片显示真实数据（非 "—"）
 - [ ] 世界地图轮廓可见，蓝色迁徙曲线从右上（楚科奇）连到左下（泰国）

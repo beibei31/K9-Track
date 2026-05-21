@@ -1,7 +1,6 @@
 package com.xue.k9track.controller;
 
 import com.xue.k9track.entity.HourlyActivity;
-import com.xue.k9track.entity.PhaseStat;
 import com.xue.k9track.entity.ScatterData;
 import com.xue.k9track.service.MigrationService;
 import lombok.RequiredArgsConstructor;
@@ -25,15 +24,6 @@ public class MigrationController {
     @GetMapping("/overview")
     public Map<String, Object> getOverview() {
         return migrationService.getOverview();
-    }
-
-    /**
-     * GET /api/migration/phase-stats
-     * 返回各阶段（breeding / migration / stopover）的统计信息
-     */
-    @GetMapping("/phase-stats")
-    public List<PhaseStat> getPhaseStats() {
-        return migrationService.getPhaseStats();
     }
 
     /**

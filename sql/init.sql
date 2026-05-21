@@ -11,7 +11,6 @@ USE k9track;
 
 -- 清理旧表（慎用，仅开发阶段）
 DROP TABLE IF EXISTS migration_summary;
-DROP TABLE IF EXISTS phase_stat;
 DROP TABLE IF EXISTS track_point;
 DROP TABLE IF EXISTS stopover;
 DROP TABLE IF EXISTS hourly_activity;
@@ -32,21 +31,7 @@ CREATE TABLE migration_summary (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='迁徙总览表';
 
 -- -------------------------------------------------------
--- 2. 各阶段统计表
--- 说明: 按 breeding / migration / stopover 分组聚合
--- 前端: 阶段分布饼图
--- -------------------------------------------------------
-CREATE TABLE phase_stat (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
-    phase        VARCHAR(50)  COMMENT '阶段名称',
-    point_count  INT          COMMENT '数据点数',
-    avg_speed    DOUBLE       COMMENT '平均时速(km/h)',
-    max_speed    DOUBLE       COMMENT '最高时速(km/h)',
-    avg_altitude DOUBLE       COMMENT '平均海拔(m)'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='阶段统计表';
-
--- -------------------------------------------------------
--- 3. 抽稀轨迹点表
+-- 2. 抽稀轨迹点表
 -- 说明: point_id % 50 == 0 抽稀，约 3890 条
 -- 前端: 高德地图 Polyline 迁徙路线
 -- -------------------------------------------------------
@@ -63,7 +48,7 @@ CREATE TABLE track_point (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='抽稀轨迹表(约4000条)';
 
 -- -------------------------------------------------------
--- 4. 停歇点表
+-- 3. 停歇点表
 -- 说明: 经纬度保留两位小数网格聚合，停留 > 48h 视为有效停歇点
 -- 前端: 高德地图 Marker 标记，点击查看停留信息
 -- -------------------------------------------------------
@@ -77,7 +62,7 @@ CREATE TABLE stopover (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='网格聚合停歇点表';
 
 -- -------------------------------------------------------
--- 5. 昼夜活动频次表
+-- 4. 昼夜活动频次表
 -- 说明: 筛选 speed_kmh > 20 的高速飞行记录，按小时(0-23)分组计数
 -- 前端: ECharts 南丁格尔玫瑰图
 -- -------------------------------------------------------
@@ -88,7 +73,7 @@ CREATE TABLE hourly_activity (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='昼夜活动频次表';
 
 -- -------------------------------------------------------
--- 6. 速度-高度散点采样表
+-- 5. 速度-高度散点采样表
 -- 说明: 从迁徙阶段随机抽取 2000 个点
 -- 前端: ECharts 散点图 (x=speed_kmh, y=altitude)
 -- -------------------------------------------------------

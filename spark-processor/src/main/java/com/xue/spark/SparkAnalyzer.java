@@ -17,7 +17,6 @@ import java.sql.Statement;
  *
  * 输出表：
  *   migration_summary  - 迁徙总览
- *   phase_stat         - 各阶段统计
  *   track_point        - 抽稀轨迹点 (约4000条)
  *   stopover           - 网格聚合停歇点
  *   hourly_activity    - 昼夜飞行频次
@@ -146,30 +145,6 @@ public class SparkAnalyzer {
         long stopoverCount = gridAgg.count();
         System.out.println("有效停歇点 (停留>6h): " + stopoverCount);
         writeToMySQL(gridAgg, "stopover");
-
-        // ========== 处理3: 各阶段统计 → phase_stat ==========
-        System.out.println("\n[处理3] 各阶段统计 → phase_stat");
-        Dataset<Row> phaseStats = df.groupBy("point_type")
-                .agg(
-                        count("point_id").as("point_count"),
-                        round(avg("speed_kmh"), 2).as("avg_speed"),
-                        round(max("speed_kmh"), 2).as("max_speed"),
-                        round(avg("altitude"), 1).as("avg_altitude")
-                )
-                .withColumnRenamed("point_type", "phase")
-                .withColumn("id", monotonically_increasing_id().plus(1))
-                .select(
-                        col("id"),
-                        col("phase"),
-                        col("point_count"),
-                        col("avg_speed"),
-                        col("max_speed"),
-                        col("avg_altitude")
-                )
-                .orderBy(col("phase"));
-
-        phaseStats.show(false);
-        writeToMySQL(phaseStats, "phase_stat");
 
         // ========== 处理4: 昼夜飞行习性（百分比） → hourly_activity ==========
         System.out.println("\n[处理4] 昼夜飞行习性(飞行占比%) → hourly_activity");
@@ -326,16 +301,6 @@ public class SparkAnalyzer {
                     + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='迁徙总览表'");
 
             stmt.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS phase_stat ("
-                    + "id INT AUTO_INCREMENT PRIMARY KEY, "
-                    + "phase VARCHAR(50) COMMENT '阶段名称', "
-                    + "point_count INT COMMENT '数据点数', "
-                    + "avg_speed DOUBLE COMMENT '平均时速', "
-                    + "max_speed DOUBLE COMMENT '最高时速', "
-                    + "avg_altitude DOUBLE COMMENT '平均海拔'"
-                    + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='阶段统计表'");
-
-            stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS track_point ("
                     + "id INT AUTO_INCREMENT PRIMARY KEY, "
                     + "point_id INT COMMENT '原始点ID', "
@@ -372,7 +337,7 @@ public class SparkAnalyzer {
                     + "altitude DOUBLE COMMENT '海拔(m)'"
                     + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='速度-高度散点采样表'");
 
-            System.out.println("数据表已就绪: migration_summary, phase_stat, track_point, stopover, hourly_activity, scatter_data");
+            System.out.println("数据表已就绪: migration_summary, track_point, stopover, hourly_activity, scatter_data");
         }
     }
 }

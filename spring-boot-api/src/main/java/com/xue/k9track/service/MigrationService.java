@@ -16,7 +16,6 @@ public class MigrationService {
     private final MigrationSummaryMapper migrationSummaryMapper;
     private final TrackPointMapper trackPointMapper;
     private final StopoverMapper stopoverMapper;
-    private final PhaseStatMapper phaseStatMapper;
     private final HourlyActivityMapper hourlyActivityMapper;
     private final ScatterDataMapper scatterDataMapper;
 
@@ -39,9 +38,7 @@ public class MigrationService {
         long stopoverCount = stopoverMapper.selectCount(null);
         overview.put("stopoverCount", stopoverCount);
 
-        int totalRecords = phaseStatMapper.selectList(null).stream()
-                .map(PhaseStat::getPointCount)
-                .reduce(0, Integer::sum);
+        long totalRecords = trackPointMapper.selectCount(null);
         overview.put("totalRecords", totalRecords);
 
         // 起止日期从轨迹点表获取
@@ -61,13 +58,6 @@ public class MigrationService {
         }
 
         return overview;
-    }
-
-    /**
-     * 各阶段统计
-     */
-    public List<PhaseStat> getPhaseStats() {
-        return phaseStatMapper.selectList(null);
     }
 
     /**

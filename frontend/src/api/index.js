@@ -9,10 +9,6 @@ export function getOverview() {
   return api.get('/api/migration/overview')
 }
 
-export function getPhaseStats() {
-  return api.get('/api/migration/phase-stats')
-}
-
 export function getTrack() {
   return api.get('/api/migration/track')
 }
