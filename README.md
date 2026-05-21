@@ -1,5 +1,7 @@
 # K9-Track：勺嘴鹬迁徙监测与分析平台
 
+> **克隆后必读**：项目中有 2 个 Java 文件包含硬编码的 `E:/project/idea/K9-Track/` 路径，需要改成你的实际项目路径，详见 [PROJECT.md](PROJECT.md) 第十章。
+
 基于 **Apache Spark** 的勺嘴鹬 (Spoon-billed Sandpiper) GPS 迁徙数据批处理与可视化系统。涵盖迁徙路线追踪、停歇点识别、昼夜飞行节律和速度-高度分布等多维分析。
 
 ## 系统架构
@@ -87,7 +89,7 @@ K9-Track/
 **1. 启动 MySQL**
 
 ```powershell
-cd E:\project\idea\K9-Track
+cd <你的项目路径>
 docker compose up -d
 ```
 
@@ -116,7 +118,7 @@ src/main/java/com/xue/k9track/K9TrackApplication.java → Run
 **4. 启动前端**
 
 ```powershell
-cd E:\project\idea\K9-Track\frontend
+cd <你的项目路径>\frontend
 npm install
 npm run dev
 ```

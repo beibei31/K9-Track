@@ -575,9 +575,40 @@ function smoothPoints(points, windowSize = 12) {
 
 ---
 
-## 十、运行指南
+## 十、路径配置说明
 
-### 10.1 环境准备
+项目中有 **2 个文件** 使用了硬编码的绝对路径 `E:/project/idea/K9-Track/`，克隆到本地后需要改成你自己的项目路径。
+
+### 需修改的文件
+
+| 文件 | 行号 | 硬编码路径 | 说明 |
+|------|------|-----------|------|
+| `spark-processor/.../SparkAnalyzer.java` | 第 74 行 | `E:/project/idea/K9-Track/input/spoonbill_k9_real_route.csv` | Spark 读取的 CSV 输入路径 |
+| `spring-boot-api/.../mock/MockDataGenerator.java` | 第 20 行 | `E:/project/idea/K9-Track/input/spoonbill_k9_real_route.csv` | MockDataGenerator 输出的 CSV 路径 |
+
+### 修改方式
+
+假设你的项目放在 `D:/workspace/K9-Track`，将上述两个文件中的路径改为：
+
+```java
+String csvPath = "D:/workspace/K9-Track/input/spoonbill_k9_real_route.csv";
+```
+
+> 注意：路径分隔符使用正斜杠 `/`（Java 跨平台兼容），不要用反斜杠 `\`。
+
+### 其他不用改的
+
+- **`docker-compose.yml`**：无硬编码路径，只有端口映射 `3307:3306`
+- **`application.yml`**：数据库连接使用 `127.0.0.1:3307`，无本地路径
+- **前端 `api/index.js`**：`baseURL: 'http://localhost:8080'`，无需修改
+- **`pom.xml`**：Maven 坐标均为相对/远程依赖，无本地路径
+- **文档中的 `cd` 命令**：那是终端操作示例，不是配置文件，按你的实际目录执行即可
+
+---
+
+## 十一、运行指南
+
+### 11.1 环境准备
 
 | 组件 | 版本要求 | 验证命令 |
 |------|----------|---------|
@@ -639,7 +670,7 @@ npm run dev
 
 ---
 
-## 十一、常见问题
+## 十二、常见问题
 
 **Q: Spring Boot 启动报 `Port 8080 is already in use`**
 
