@@ -1,83 +1,79 @@
 <template>
-  <div class="chart-card">
-    <div class="chart-title">高度-速度散点分布 (迁徙阶段采样)</div>
-    <div ref="chartRef" class="chart-body"></div>
+  <div class="cht-wrap">
+    <div class="cht-title">高度-速度散点采样</div>
+    <div ref="chartRef" class="cht-body"></div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 
-const props = defineProps({
-  data: { type: Array, default: () => [] },
-  loading: { type: Boolean, default: true }
-})
-
 const chartRef = ref(null)
-let chartInstance = null
+let chart = null
+let ro = null
 
-onMounted(() => {
-  chartInstance = echarts.init(chartRef.value)
-  window.addEventListener('resize', () => chartInstance?.resize())
-})
+function mock() {
+  const pts = []
+  for (let i = 0; i < 500; i++) {
+    const speed = Math.round((20 + Math.random() * 45) * 10) / 10
+    const altitude = Math.round(speed * 28 + (Math.random() - 0.5) * 1200)
+    pts.push([speed, Math.max(50, Math.min(2900, altitude))])
+  }
+  return pts
+}
 
-watch(() => props.data, (val) => {
-  if (val.length > 0) nextTick(() => renderChart(val))
-})
-
-function renderChart(data) {
-  if (!chartInstance) return
-  chartInstance.setOption({
+function render() {
+  const el = chartRef.value
+  if (!el || el.clientWidth === 0) return
+  if (!chart) chart = echarts.init(el)
+  chart.setOption({
     tooltip: {
       trigger: 'item',
-      formatter: p => `速度: ${p.value[0]} km/h<br/>高度: ${p.value[1]} m`
+      backgroundColor: '#fff',
+      borderColor: '#e8e8e8',
+      textStyle: { color: '#1a1a1a', fontSize: 12 },
+      formatter: p => `速度 ${p.value[0]} km/h<br/>高度 ${p.value[1]} m`
     },
-    grid: { top: 16, right: 24, bottom: 32, left: 56 },
+    grid: { top: 10, right: 18, bottom: 24, left: 46 },
     xAxis: {
-      name: '速度 (km/h)',
-      nameTextStyle: { color: '#8899aa' },
-      axisLabel: { color: '#8899aa' }
+      type: 'value', min: 15, max: 70,
+      axisLine: { show: false }, axisTick: { show: false },
+      axisLabel: { color: '#8c8c8c', fontSize: 10 },
+      splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } }
     },
     yAxis: {
-      name: '高度 (m)',
-      nameTextStyle: { color: '#8899aa' },
-      axisLabel: { color: '#8899aa' }
+      type: 'value', min: 0, max: 3000,
+      axisLine: { show: false }, axisTick: { show: false },
+      axisLabel: { color: '#8c8c8c', fontSize: 10 },
+      splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } }
     },
     series: [{
       type: 'scatter',
-      data: data.map(d => [d.speed, d.altitude]),
-      symbolSize: 4,
+      data: mock(),
+      symbolSize: 6,
       itemStyle: {
-        color: new echarts.graphic.RadialGradient(0.4, 0.3, 0.8, [
-          { offset: 0, color: 'rgba(79,195,247,0.9)' },
-          { offset: 1, color: 'rgba(79,195,247,0.1)' }
-        ])
+        color: 'rgba(24,144,255,0.55)',
+        borderWidth: 0
       }
     }]
   })
 }
+
+onMounted(() => {
+  const el = chartRef.value
+  if (!el) return
+  setTimeout(render, 80)
+  ro = new ResizeObserver(() => {
+    if (el.clientWidth > 0) chart ? chart.resize() : render()
+  })
+  ro.observe(el)
+})
+onUnmounted(() => { ro?.disconnect(); chart?.dispose() })
 </script>
 
 <style scoped>
-.chart-card {
-  flex: 1;
-  background: #112236;
-  border: 1px solid #1a3a4a;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  min-height: 220px;
-}
-.chart-title {
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #b0bec5;
-  border-bottom: 1px solid #1a3a4a;
-}
-.chart-body {
-  flex: 1;
-  min-height: 180px;
-}
+.cht-wrap { height: 100%; display: flex; flex-direction: column; }
+.cht-title { font-size: 13px; font-weight: 600; color: #1a1a1a; padding-bottom: 4px; flex-shrink: 0; }
+.cht-body { flex: 1; min-height: 0; min-width: 0; }
 </style>

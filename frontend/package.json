@@ -8,12 +8,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.4.0",
+    "@amap/amap-jsapi-loader": "^1.0.1",
+    "@element-plus/icons-vue": "^2.3.0",
     "axios": "^1.7.0",
     "echarts": "^5.5.0",
     "element-plus": "^2.7.0",
-    "@element-plus/icons-vue": "^2.3.0",
-    "@amap/amap-jsapi-loader": "^1.0.1"
+    "vue": "^3.4.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",

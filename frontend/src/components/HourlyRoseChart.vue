@@ -1,81 +1,80 @@
 <template>
-  <div class="chart-card">
-    <div class="chart-title">昼夜飞行习性 (南丁格尔玫瑰图)</div>
-    <div ref="chartRef" class="chart-body"></div>
+  <div class="cht-wrap">
+    <div class="cht-title">昼夜飞行习性</div>
+    <div ref="chartRef" class="cht-body"></div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 
-const props = defineProps({
-  data: { type: Array, default: () => [] },
-  loading: { type: Boolean, default: true }
-})
-
 const chartRef = ref(null)
-let chartInstance = null
+let chart = null
+let ro = null
 
-onMounted(() => {
-  chartInstance = echarts.init(chartRef.value)
-  window.addEventListener('resize', () => chartInstance?.resize())
-})
+function mock() {
+  return [
+    312, 450, 680, 890, 1050, 1200, 980, 720,
+    520, 380, 310, 280, 260, 250, 240, 260,
+    320, 480, 720, 980, 1180, 1100, 820, 520
+  ]
+}
 
-watch(() => props.data, (val) => {
-  if (val.length > 0) nextTick(() => renderChart(val))
-})
+// 莫兰迪色系 —— 低饱和度
+const MORANDI = [
+  '#9bbfd4','#a3c9c7','#c2cfa3','#dfcf9f',
+  '#e2bd9c','#dba898','#cba3a3','#c2a6bf',
+  '#b3b3cc','#a3bdd4','#a3c9c0','#bccfa3',
+  '#d9cea3','#dfbfa3','#dba8a8','#cba3ba',
+  '#c2a6cc','#b3a6cc','#a3b3cc','#a3c1cc',
+  '#9bc4cc','#9bc4c0','#a9cc9b','#c2cc9b'
+]
 
-function renderChart(data) {
-  if (!chartInstance) return
-  const hours = data.map(d => `${d.hour}:00`)
-  const counts = data.map(d => d.count)
-
-  chartInstance.setOption({
-    tooltip: { trigger: 'item' },
-    legend: { bottom: 0, textStyle: { color: '#8899aa', fontSize: 10 } },
+function render() {
+  const el = chartRef.value
+  if (!el || el.clientWidth === 0) return
+  if (!chart) chart = echarts.init(el)
+  const data = mock()
+  chart.setOption({
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: '#fff',
+      borderColor: '#e8e8e8',
+      textStyle: { color: '#1a1a1a', fontSize: 12 },
+      formatter: p => `<b>${p.name}:00</b><br/>飞行频次 ${p.value}`
+    },
     series: [{
       type: 'pie',
-      radius: ['20%', '75%'],
-      roseType: 'area',
-      data: hours.map((h, i) => ({ name: h, value: counts[i] })),
-      label: {
-        color: '#8899aa',
-        fontSize: 10,
-        formatter: p => p.value > 200 ? p.name : ''
-      },
-      itemStyle: {
-        borderRadius: 2,
-        borderColor: '#1a3a4a',
-        borderWidth: 1
-      },
-      emphasis: {
-        label: { fontSize: 14, fontWeight: 'bold' }
-      }
+      radius: ['20%', '78%'],
+      center: ['50%', '50%'],
+      roseType: 'radius',
+      itemStyle: { borderRadius: 2, borderColor: '#fff', borderWidth: 1 },
+      data: data.map((v, i) => ({
+        name: String(i),
+        value: v,
+        itemStyle: { color: MORANDI[i % MORANDI.length] }
+      })),
+      label: { color: '#8c8c8c', fontSize: 9, formatter: p => p.value > 700 ? `${p.name}h` : '' },
+      emphasis: { label: { fontSize: 14, fontWeight: 'bold' }, scaleSize: 6 }
     }]
   })
 }
+
+onMounted(() => {
+  const el = chartRef.value
+  if (!el) return
+  setTimeout(render, 80)
+  ro = new ResizeObserver(() => {
+    if (el.clientWidth > 0) chart ? chart.resize() : render()
+  })
+  ro.observe(el)
+})
+onUnmounted(() => { ro?.disconnect(); chart?.dispose() })
 </script>
 
 <style scoped>
-.chart-card {
-  flex: 1;
-  background: #112236;
-  border: 1px solid #1a3a4a;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  min-height: 220px;
-}
-.chart-title {
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #b0bec5;
-  border-bottom: 1px solid #1a3a4a;
-}
-.chart-body {
-  flex: 1;
-  min-height: 180px;
-}
+.cht-wrap { height: 100%; display: flex; flex-direction: column; }
+.cht-title { font-size: 13px; font-weight: 600; color: #1a1a1a; padding-bottom: 4px; flex-shrink: 0; }
+.cht-body { flex: 1; min-height: 0; min-width: 0; }
 </style>
