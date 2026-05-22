@@ -270,7 +270,7 @@ async function initMap(geoLoaded) {
         symbol: 'circle', symbolSize: 8,
         itemStyle: { color: '#DC2626' },
         label: { show: true, position: 'right', distance: 8, color: '#374151', fontSize: 11, fontWeight: 500,
-          formatter: p => p.data.days ? `${p.data.name}\n停歇${p.data.days}天` : p.data.name
+          formatter: p => p.data.name
         },
         emphasis: { scale: 1.8 }, zlevel: 10
       }
